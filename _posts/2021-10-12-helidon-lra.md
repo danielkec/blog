@@ -86,13 +86,13 @@ Our hypothetical cinema needs an online reservation system, we will split it in 
 
 Our booking service is going to reserve the seat first. Reservation service will start new LRA transaction and join it as a first tx participant.  When seat is successfully reserved, payment service is going to be called under the same LRA transaction. Payment service will join transaction as another participant. If payment operation fails, LRA transaction is going to be cancelled and all participants are going to be notified through the compensation links which they provided during joining. Practically that means that LRA coordinator is going to call the method annotated with @Compensate with LRA id as a parameter. That is all we need in our booking service to clear the seat reservation to make it available for another, hopefully more solvent customer.
 
-## Deploy to minikube
+### Deploy to minikube
 Prerequisites:
 * Installed and started minikube
 * Environment with 
 [minikube docker daemon](https://minikube.sigs.k8s.io/docs/handbook/pushing/#1-pushing-directly-to-the-in-cluster-docker-daemon-docker-env) - `eval $(minikube docker-env)`
 
-### Build images
+#### Build images
 As we work directly with 
 [minikube docker daemon](https://minikube.sigs.k8s.io/docs/handbook/pushing/#1-pushing-directly-to-the-in-cluster-docker-daemon-docker-env)
 all we need to do is build the docker images.
@@ -102,7 +102,7 @@ bash build.sh;
 First build can take few minutes for all the artefacts to download,
 subsequent builds are going to be much faster as the layer with dependencies gets cached.
 
-### Deploy to minikube
+#### Deploy to minikube
 ```shell
 bash deploy-minikube.sh
 ```
@@ -124,11 +124,11 @@ service/cinema-reservation exposed
 Application cinema-reservation will be available at http://192.168.99.107:31584
 ```
 
-## Deploy to OCI OKE cluster
+### Deploy to OCI OKE cluster
 Prerequisites:
 * [OKE k8s cluster](https://docs.oracle.com/en/learn/container_engine_kubernetes)
 * OCI Cloud Shell with git, docker and kubectl configured for access OKE cluster
-### Pushing images to your OCI Container registry
+#### Pushing images to your OCI Container registry
 First thing you need is a place to push your docker images to, so 
 OKE k8s can pull them from such place. 
 [Container registry](https://docs.oracle.com/en-us/iaas/Content/Registry/Concepts/registryprerequisites.htm#Availab) 
@@ -186,7 +186,7 @@ and set both repositories **Public**
 
 ![https://cloud.oracle.com/registry/containers/repos](/blog/assets/lra/public-registry.png)
 
-### Deploy to OKE
+#### Deploy to OKE
 You can use freshly cloned helidon-lra-example repository in OCI Cloud shell 
 as all you need are the k8s descriptors. Your changes are built to the 
 images you have pushed in the previous step.
