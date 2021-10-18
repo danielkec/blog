@@ -9,8 +9,10 @@ categories: helidon lra saga
 
 MicroProfile Long Running Actions is a long anticipated specification for a lock free and consequently loosely coupled approach for achieving consistency in the microservice environment.
 
+Long Running Actions are following the idea of famous [SAGA pattern](https://en.wikipedia.org/wiki/Long-running_transaction), asynchronous compensations are used for keeping eventual data integrity without the need of staging up expensive isolation. This exchanges the additional burden of keeping the eye on your data integrity for great scalability so cherrished in the world of microservices.    
+
 ## LRA Transaction
-Every LRA transaction can be joined by multiple participants. Participant is  JAX-RS resource with methods annotated with LRA annotations, usually the one for joining @LRA and others to be called in case of compensating @Compensate or completing @Complete the transaction.
+Every LRA transaction can be joined by multiple participants. Participant is JAX-RS resource with methods annotated with LRA annotations, usually the one for joining `@LRA` and others to be called in case of compensating `@Compensate` or completing `@Complete` the transaction.
 
 ```java
 @Path("/example")
@@ -41,12 +43,12 @@ public class LRAExampleResource {
         return LRAResponse.compensated();
     }
 ```
-Every participant joining the LRA transaction needs to provide its compensation links, those are urls leading to resources annotated with @Compensate, @Complete, @AfterLRA etc. LRA coordinator keeping the track knows then which resources call when the state of LRA transaction changes.
-When Jax-Rs resource method is annotated with @LRA(REQUIRES_NEW), every intercepted call starts new LRA transaction within coordinator and join it as new participant before resource method is invoked. Id of created LRA transaction as accesible in the resource method thru LRA_CONTEXT… header. When the resource method invocation successfully finishes, LRA transaction is reported to coordinator as closed and if participant has @Complete method, it is eventually invoked by coordinator again with appropriate LRA id header together with complete method of all the other participants which joined this particular LRA transaction.
+Every participant joining the LRA transaction needs to provide its compensation links, those are urls leading to resources annotated with `@Compensate`, `@Complete`, `@AfterLRA` etc. LRA coordinator keeping the track knows then which resources call when the state of LRA transaction changes.
+When Jax-Rs resource method is annotated with `@LRA(REQUIRES_NEW)`, every intercepted call starts new LRA transaction within coordinator and join it as new participant before resource method is invoked. Id of created LRA transaction as accesible in the resource method thru LRA_CONTEXT… header. When the resource method invocation successfully finishes, LRA transaction is reported to coordinator as closed and if participant has `@Complete` method, it is eventually invoked by coordinator again with appropriate LRA id header together with complete method of all the other participants which joined this particular LRA transaction.
 
 ![Participants](/blog/assets/lra/participant-coordinator.png)
 
-When resource method finishes exceptionally, LRA is reported to coordinator as cancelled and coordinator call @Compensate method on all participants registered under that transaction.
+When resource method finishes exceptionally, LRA is reported to coordinator as cancelled and coordinator call `@Compensate` method on all participants registered under that transaction.
 
 ![Participant cancel](/blog/assets/lra/participant-cancel.png)
 
@@ -128,6 +130,7 @@ Application cinema-reservation will be available at http://192.168.99.107:31584
 Prerequisites:
 * [OKE k8s cluster](https://docs.oracle.com/en/learn/container_engine_kubernetes)
 * OCI Cloud Shell with git, docker and kubectl configured for access OKE cluster
+  
 #### Pushing images to your OCI Container registry
 First thing you need is a place to push your docker images to, so 
 OKE k8s can pull them from such place. 
@@ -139,6 +142,7 @@ where `joe@acme.com` is your OCI user.
 Password will be [auth token](https://docs.oracle.com/en-us/iaas/Content/Registry/Tasks/registrygettingauthtoken.htm) 
 of your `joe@acme.com`
 For getting region key and tenancy namespace just execute following cmd in your OCI Cloud Shell: 
+
 ```shell
 # Get tenancy namespace and container registry
 echo "" && \
@@ -149,13 +153,15 @@ echo "docker login ${OCI_CONFIG_PROFILE}.ocir.io" && \
 echo "Username: $(oci os ns get --query "data" --raw-output)/joe@acme.com" && \
 echo "Password: --- Auth token for user joe@acme.com" && \
 echo ""
-# Example output
->Container registry: eu-frankfurt-1.ocir.io
->Tenancy namespace: fr8yxyel2vcv
->
->docker login eu-frankfurt-1.ocir.io
->Username: fr8yxyel2vcv/joe@acme.com
->Password: --- Auth token for user joe@acme.com
+```
+Example output:
+```shell
+Container registry: eu-frankfurt-1.ocir.io
+Tenancy namespace: fr8yxyel2vcv
+
+docker login eu-frankfurt-1.ocir.io
+Username: fr8yxyel2vcv/joe@acme.com
+Password: --- Auth token for user joe@acme.com
 ```
 Save your container registry, tenancy namespace and auth token for later.
 
@@ -165,14 +171,16 @@ with container registry and tenancy namespace as the parameters.
 Example:
 ```shell
 bash build-oci.sh eu-frankfurt-1.ocir.io fr8yxyel2vcv
-# Example output
->docker build -t eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/payment-service:1.0 .
+```
+Example output:
+```shell
+docker build -t eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/payment-service:1.0 .
 ...
->docker push eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/seat-booking-service:1.0
+docker push eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/seat-booking-service:1.0
 ...
->docker build -t eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/seat-booking-service:1.0 .
+docker build -t eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/seat-booking-service:1.0 .
 ...
->docker push eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/payment-service:1.0
+docker push eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/payment-service:1.0
 ...
 ```
 The script will print out docker build commands before executing them. 
@@ -198,12 +206,15 @@ cd helidon-lra-example
 bash deploy-oci.sh
 
 kubectl get services
->NAME                         TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
->booking-db                   ClusterIP      10.96.118.249   <none>        3306/TCP         34s
->lra-coordinator              NodePort       10.96.114.48    <none>        8070:32434/TCP   33s
->oci-load-balancing-service   LoadBalancer   10.96.170.39    <pending>     80:31192/TCP     33s
->payment-service              NodePort       10.96.153.147   <none>        8080:30842/TCP   32s
->seat-booking-service         NodePort       10.96.54.129    <none>        8080:32327/TCP   32s
+```
+Example output:
+```shell
+NAME                         TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+booking-db                   ClusterIP      10.96.118.249   <none>        3306/TCP         34s
+lra-coordinator              NodePort       10.96.114.48    <none>        8070:32434/TCP   33s
+oci-load-balancing-service   LoadBalancer   10.96.170.39    <pending>     80:31192/TCP     33s
+payment-service              NodePort       10.96.153.147   <none>        8080:30842/TCP   32s
+seat-booking-service         NodePort       10.96.54.129    <none>        8080:32327/TCP   32s
 ```
 
 You can see that right after deployment EXTERNAL-IP of the external LoadBalancer reads as `<pending>`
