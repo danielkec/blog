@@ -5,7 +5,7 @@ date:   2021-10-12 23:40:26 +0200
 categories: helidon lra saga
 ---
 
-![Photo from Unsplash](/blog/assets/lra/switch-operator.png)
+![Photo from Unsplash](../assets/lra/switch-operator.png)
 
 MicroProfile Long Running Actions is a long anticipated specification for a lock free and consequently loosely coupled approach for achieving consistency in the microservice environment.
 
