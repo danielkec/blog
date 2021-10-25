@@ -5,7 +5,7 @@ date:   2021-10-12 23:40:26 +0200
 categories: helidon lra saga
 ---
 
-![Photo from Unsplash](/blog/assets/lra/switch-operator.png)
+![Photo from Unsplash](../assets/lra/switch-operator.png)
 
 MicroProfile Long Running Actions is a long anticipated specification for a lock free and consequently loosely coupled approach for achieving consistency in the microservice environment.
 
@@ -22,7 +22,7 @@ public class LRAExampleResource {
     @PUT
     @LRA(value = LRA.Type.REQUIRES_NEW, timeLimit = 500, timeUnit = ChronoUnit.MILLIS)
     @Path("start-example")
-    public Response startExample(@HeaderParam(LRA_HTTP_CONTEXT_HEADER) URI lraId, String data){
+    public Response startExample(@HeaderParam(LRA_HTTP_CONTEXT_HEADER) URI lraId, String data) {
         // Executed in the scope of new LRA transaction
         return Response.ok().build();
     }
@@ -42,19 +42,20 @@ public class LRAExampleResource {
         // Called by LRA coordinator when startExample method throws exception or don't finish before time limit
         return LRAResponse.compensated();
     }
+}
 ```
 Every participant joining the LRA transaction needs to provide its compensation links, those are urls leading to resources annotated with `@Compensate`, `@Complete`, `@AfterLRA` etc. LRA coordinator keeping the track knows then which resources call when the state of LRA transaction changes.
 When Jax-Rs resource method is annotated with `@LRA(REQUIRES_NEW)`, every intercepted call starts new LRA transaction within coordinator and join it as new participant before resource method is invoked. Id of created LRA transaction as accesible in the resource method thru LRA_CONTEXT… header. When the resource method invocation successfully finishes, LRA transaction is reported to coordinator as closed and if participant has `@Complete` method, it is eventually invoked by coordinator again with appropriate LRA id header together with complete method of all the other participants which joined this particular LRA transaction.
 
-![Participants](/blog/assets/lra/participant-coordinator.png)
+![Participants](../assets/lra/participant-coordinator.png)
 
 When resource method finishes exceptionally, LRA is reported to coordinator as cancelled and coordinator call `@Compensate` method on all participants registered under that transaction.
 
-![Participant cancel](/blog/assets/lra/participant-cancel.png)
+![Participant cancel](../assets/lra/participant-cancel.png)
 
 When transaction isn't closed in time before it's timeout is reached, coordinator cancels transaction by itself and calls compensate endpoints of the all participants of the time-outed transaction.
 
-![Participant timeout](/blog/assets/lra/participant-timeout.png)
+![Participant timeout](/../assets/lra/participant-timeout.png)
 
 ## LRA Coordinator
 
@@ -80,7 +81,7 @@ todo
 
 Let's take a look at more concrete use case.
 
-![Photo by Kilyan Sockalingum on Unsplash](/blog/assets/lra/seats.jpeg)
+![Photo by Kilyan Sockalingum on Unsplash](../assets/lra/seats.jpeg)
 
 ## Online cinema booking system
 
@@ -192,7 +193,7 @@ open in your OCI console **Developer Tools**>**Containers & Artifacts**>
 [**Container Registry**](https://cloud.oracle.com/registry/containers/repos)
 and set both repositories **Public**
 
-![https://cloud.oracle.com/registry/containers/repos](/blog/assets/lra/public-registry.png)
+![https://cloud.oracle.com/registry/containers/repos](../assets/lra/public-registry.png)
 
 #### Deploy to OKE
 You can use freshly cloned helidon-lra-example repository in OCI Cloud shell 

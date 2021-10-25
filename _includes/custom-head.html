@@ -5,5 +5,18 @@
   2. Customize default _includes/custom-head.html in your source directory and insert the given code snippet.
 {% endcomment %}
 <head>
-  <link rel="shortcut icon" type="image/png" href="/blog/favicon.png">
+    <link rel="shortcut icon" type="image/png" href="/blog/favicon.png">
+    <script>
+        document.addEventListener('readystatechange', event => {
+            if (event.target.readyState === "complete") {
+                document.querySelectorAll("img").forEach(function (i) {
+                    // Fix relative markdown link so, md files has images linked properly before and after render
+                    //http://127.0.0.1:4000/blog/helidon/lra/saga/2021/10/assets/lra/switch-operator.png
+                    // to
+                    //http://127.0.0.1:4000/blog/assets/lra/switch-operator.png
+                    i.src = i.src.replaceAll(/blog\/[a-zA-Z0-9\/]*\/assets/g, 'blog/assets')
+                })
+            }
+        });
+    </script>
 </head>
