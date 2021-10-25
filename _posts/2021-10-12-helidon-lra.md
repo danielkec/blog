@@ -55,7 +55,7 @@ When resource method finishes exceptionally, LRA is reported to coordinator as c
 
 When transaction isn't closed in time before it's timeout is reached, coordinator cancels transaction by itself and calls compensate endpoints of the all participants of the time-outed transaction.
 
-![Participant timeout](/../assets/lra/participant-timeout.png)
+![Participant timeout](../assets/lra/participant-timeout.png)
 
 ## LRA Coordinator
 
