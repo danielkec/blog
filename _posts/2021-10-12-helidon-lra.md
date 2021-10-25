@@ -83,11 +83,25 @@ Let's take a look at more concrete use case.
 
 ![Photo by Kilyan Sockalingum on Unsplash](../assets/lra/seats.jpeg)
 
-## Online cinema booking system
+## Online cinema booking system
 
-Our hypothetical cinema needs an online reservation system, we will split it in the two scalable services, one for actual booking of the seat and the second one for making the payment. Our services will be completely separated, integrated only through the REST API calls.
+Our hypothetical cinema needs an online reservation system, we will split it in the two scalable services, one for 
+actual booking of the seat and the second one for making the payment. Our services will be completely separated, 
+integrated only through the REST API calls.
 
-Our booking service is going to reserve the seat first. Reservation service will start new LRA transaction and join it as a first tx participant.  When seat is successfully reserved, payment service is going to be called under the same LRA transaction. Payment service will join transaction as another participant. If payment operation fails, LRA transaction is going to be cancelled and all participants are going to be notified through the compensation links which they provided during joining. Practically that means that LRA coordinator is going to call the method annotated with @Compensate with LRA id as a parameter. That is all we need in our booking service to clear the seat reservation to make it available for another, hopefully more solvent customer.
+Our booking service is going to reserve the seat first. Reservation service will start new LRA transaction and join it 
+as a first tx participant.  When seat is successfully reserved, payment service is going to be called under the same 
+LRA transaction. Payment service will join transaction as another participant. If payment operation fails, 
+LRA transaction is going to be cancelled and all participants are going to be notified through the compensation 
+links which they provided during joining. Practically that means that LRA coordinator is going to call the method 
+annotated with `@Compensate` with LRA id as a parameter. That is all we need in our booking service to clear the seat 
+reservation to make it available for another, hopefully more solvent customer.
+
+Example Cinema Booking project leveraging LRA is available on GitHub: https://github.com/danielkec/helidon-lra-example
+
+It is a set of few simple K8s services prepared to be deployable to 
+[Oracle Kubernetes Engine](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm) 
+or locally to [Minikube](https://minikube.sigs.k8s.io/docs/). 
 
 ### Deploy to minikube
 Prerequisites:
