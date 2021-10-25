@@ -97,7 +97,9 @@ links which they provided during joining. Practically that means that LRA coordi
 annotated with `@Compensate` with LRA id as a parameter. That is all we need in our booking service to clear the seat 
 reservation to make it available for another, hopefully more solvent customer.
 
-Example Cinema Booking project leveraging LRA is available on GitHub: [danielkec/helidon-lra-example](https://github.com/danielkec/helidon-lra-example)
+Example Cinema Booking project leveraging LRA is available on GitHub: 
+
+![GitHub](../assets/Octocat.png)[danielkec/helidon-lra-example](https://github.com/danielkec/helidon-lra-example)
 
 It is a set of few simple K8s services prepared to be deployable to 
 [Oracle Kubernetes Engine](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm) 
