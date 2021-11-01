@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Long Running Actions with Helidon"
+title:  "Long Running Actions with Helidon"
 date:   2021-10-12 23:40:26 +0200
 categories: helidon lra saga
 ---
@@ -9,7 +9,7 @@ categories: helidon lra saga
 
 MicroProfile Long Running Actions is a long anticipated specification for a lock free and consequently loosely coupled approach for achieving consistency in the microservice environment.
 
-Long Running Actions are following the idea of famous [SAGA pattern](https://en.wikipedia.org/wiki/Long-running_transaction), asynchronous compensations are used for keeping eventual data integrity without the need of staging up expensive isolation. This exchanges the additional burden of keeping the eye on your data integrity for great scalability so cherrished in the world of microservices.    
+Long Running Actions are following the idea of famous [SAGA pattern](https://en.wikipedia.org/wiki/Long-running_transaction), asynchronous compensations are used for keeping eventual data integrity without the need of staging up expensive isolation. This exchanges the additional burden of keeping the eye on your data integrity for great scalability so cherished in the world of microservices.    
 
 ## LRA Transaction
 Every LRA transaction can be joined by multiple participants. Participant is JAX-RS resource with methods annotated with LRA annotations, usually the one for joining `@LRA` and others to be called in case of compensating `@Compensate` or completing `@Complete` the transaction.
@@ -45,7 +45,7 @@ public class LRAExampleResource {
 }
 ```
 Every participant joining the LRA transaction needs to provide its compensation links, those are urls leading to resources annotated with `@Compensate`, `@Complete`, `@AfterLRA` etc. LRA coordinator keeping the track knows then which resources call when the state of LRA transaction changes.
-When Jax-Rs resource method is annotated with `@LRA(REQUIRES_NEW)`, every intercepted call starts new LRA transaction within coordinator and join it as new participant before resource method is invoked. Id of created LRA transaction as accesible in the resource method thru LRA_CONTEXT… header. When the resource method invocation successfully finishes, LRA transaction is reported to coordinator as closed and if participant has `@Complete` method, it is eventually invoked by coordinator again with appropriate LRA id header together with complete method of all the other participants which joined this particular LRA transaction.
+When Jax-Rs resource method is annotated with `@LRA(REQUIRES_NEW)`, every intercepted call starts new LRA transaction within coordinator and join it as new participant before resource method is invoked. Id of created LRA transaction as accessible in the resource method through LRA_CONTEXT… header. When the resource method invocation successfully finishes, LRA transaction is reported to coordinator as closed and if participant has `@Complete` method, it is eventually invoked by coordinator again with appropriate LRA id header together with complete method of all the other participants which joined this particular LRA transaction.
 
 ![Participants](../assets/lra/participant-coordinator.png)
 
@@ -63,21 +63,26 @@ Long Running Actions implementation in Helidon requires LRA coordinator for LRA 
 
 Helidon supports:
 * Narayana LRA Coordinator
-* Oracle Transaction Manager for Microservices
 * Experimental Helidon LRA Coordinator
 
 ### Narayana LRA Coordinator
-todo
+Narayana is well known transaction manager with long history of reliability in the field of 
+distributed transactions built around Arjuna core. Narayana LRA coordinator brings support for Long Running Actions and is the first LRA coordinator on the market.
 
-### Oracle TMM LRA Coordinator
-Oracle Transaction Manager for Microservices 
-todo
+
+```shell
+wget https://search.maven.org/remotecontent?filepath=org/jboss/narayana/rts/lra-coordinator-quarkus/5.11.1.Final/lra-coordinator-quarkus-5.11.1.Final-runner.jar \
+-O narayana-coordinator.jar \
+&& java -Dquarkus.http.port=8070 -jar narayana-coordinator.jar
+```
 
 ### Experimental Helidon LRA Coordinator
-Simplistic coordinator easy to setup for development and test purposes. While its not recommended for usage in production, its great lightweight solution for testing your LRA resources.
+Helidon brings its own coordinator, easy to set up for development and test purposes. While it is not recommended for usage in production, it is a great lightweight solution for testing your LRA resources.
 
-### Scaling coordinator
-todo
+```shell
+docker build -t helidon/lra-coordinator https://github.com/oracle/helidon.git#:lra/coordinator/server
+docker run -dp 8070:8070 --name lra-coordinator --network="host" helidon/lra-coordinator
+```
 
 Let's take a look at more concrete use case.
 
