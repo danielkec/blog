@@ -129,6 +129,9 @@ is set to `false`.
         }
     }
 ```
+
+![Create new seat booking](../assets/lra/seats-create.png)
+
 When seat is successfully reserved, payment service is going to be called under the same 
 LRA transaction. Artificial header `Long-Running-Action` is present in the response, so we can access it 
 even on the client.
@@ -163,6 +166,8 @@ So we can call other backend resource with same LRA transaction, just by setting
         })
     }
 ```
+![Payment form](../assets/lra/seats-pay.png)
+
 Backend calls different service over JAX-RS client, we don't need to set `Long-Running-Action` header to 
 propagate LRA transaction as with JAX-RS clients LRA implementation will do that for us 
 automatically.
@@ -238,8 +243,7 @@ the seat reservation to make it available for another, hopefully more solvent cu
         return Response.ok(ParticipantStatus.Completed.name()).build();
     }
 ```
-
-![Photo by Kilyan Sockalingum on Unsplash](../assets/lra/seats-workflow.png)
+![Payment form](../assets/lra/seats-cancelled.png)
 
 Example Cinema Booking project leveraging LRA is available on GitHub: 
 
@@ -387,4 +391,15 @@ give you external ip address with Helidon Cinema example exposed on port 80.
 Keeping integrity in distributed systems with compensation logic isn't a new idea, 
 but can be quite complicated to achieve without special tooling.
 *MicroProfile Long Running Actions* is exactly that, a tooling hiding the complexities.
-So we can deliver 
+So we can focus on business logic, instead of inventing wheel again.
+
+We are already working on additional exciting features, like compatibility with other LRA coordinators 
+or support of LRA context in messaging. 
+
+So stay tuned and happy coding!
+
+### Resources
+* [Helidon LRA documentation](https://helidon.io/docs/v2/#/mp/lra/01_introduction)
+* [MicroProfile Long Running Actions Specification](https://download.eclipse.org/microprofile/microprofile-lra-1.0/microprofile-lra-spec-1.0.html)
+* [Narayana LRA coordinator](https://narayana.io/lra/)
+* [Online Cinema Booking example project](https://github.com/danielkec/helidon-lra-example)
