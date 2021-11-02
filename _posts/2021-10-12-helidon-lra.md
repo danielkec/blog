@@ -95,18 +95,157 @@ actual booking of the seat and the second one for making the payment. Our servic
 integrated only through the REST API calls.
 
 Our booking service is going to reserve the seat first. Reservation service will start new LRA transaction and join it 
-as a first tx participant.  When seat is successfully reserved, payment service is going to be called under the same 
-LRA transaction. Payment service will join transaction as another participant. If payment operation fails, 
-LRA transaction is going to be cancelled and all participants are going to be notified through the compensation 
-links which they provided during joining. Practically that means that LRA coordinator is going to call the method 
-annotated with `@Compensate` with LRA id as a parameter. That is all we need in our booking service to clear the seat 
-reservation to make it available for another, hopefully more solvent customer.
+as a first tx participant. All communication with LRA coordinator is done behind the scenes, and we can just 
+access LRA ID assigned to the new TX in our JAX-RS method as request header `Long-Running-Action`, 
+LRA stays active after JAX-RS method finishes because [Lra#end](https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/org/eclipse/microprofile/lra/annotation/ws/rs/LRA.html#end--)
+is set to `false`.
+
+```java
+    @PUT
+    @Path("/create/{id}")
+    // Create new LRA transaction which won't end after this JAX-RS method end
+    // Time limit for new LRA is 30 sec
+    @LRA(value = LRA.Type.REQUIRES_NEW, end = false, timeLimit = 30)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response createBooking(@HeaderParam(LRA.LRA_HTTP_CONTEXT_HEADER) URI lraId,
+                                  @PathParam("id") long id,
+                                  Booking booking) {
+
+        // LRA ID assigned by coordinator is provided as artificial request header
+        booking.setLraId(lraId.toASCIIString());
+
+        if (repository.createBooking(booking, id)) {
+            LOG.info("Creating booking for " + id);
+            return Response.ok().build();
+        } else {
+            LOG.info("Seat " + id + " already booked!");
+            return Response
+                    .status(Response.Status.CONFLICT)
+                    .entity(JSON.createObjectBuilder()
+                            .add("error", "Seat " + id + " is already reserved!")
+                            .add("seat", id)
+                            .build())
+                    .build();
+        }
+    }
+```
+When seat is successfully reserved, payment service is going to be called under the same 
+LRA transaction. Artificial header `Long-Running-Action` is present in the response, so we can access it 
+even on the client.
+```javascript
+    reserveButton.click(function () {
+        selectionView.hide();
+        createBooking(selectedSeat.html())
+            .then(res => {
+                if (res.ok) {
+                    // Notice how we can access LRA ID even on the client side
+                    let lraId = res.headers.get("Long-Running-Action");
+                    paymentView.attr("data-lraId", lraId);
+                    paymentView.show();
+                } else {
+                    res.json().then(json => {
+                        showError(json.error);
+                    });
+                }
+            });
+    });
+```
+So we can call other backend resource with same LRA transaction, just by setting `Long-Running-Action` again. 
+```javascript
+    function makePayment(cardNumber, amount, lraId) {
+        return fetch('/booking/payment', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Long-Running-Action': lraId
+            },
+            body: JSON.stringify({"cardNumber": cardNumber, "amount": amount})
+        })
+    }
+```
+Backend calls different service over JAX-RS client, we don't need to set `Long-Running-Action` header to 
+propagate LRA transaction as with JAX-RS clients LRA implementation will do that for us 
+automatically.
+```java
+    @PUT
+    @Path("/payment")
+    // Needs to be called within LRA transaction context
+    // Doesn't end LRA transaction
+    @LRA(value = LRA.Type.MANDATORY, end = false)
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response makePayment(@HeaderParam(LRA.LRA_HTTP_CONTEXT_HEADER) URI lraId,
+                                JsonObject jsonObject) {
+        LOG.info("Payment " + jsonObject.toString());
+        // Notice that we don't need to propagate LRA header
+        // When using JAX-RS client, LRA header is propagated automatically
+        ClientBuilder.newClient()
+                .target("http://payment-service:7002")
+                .path("/payment/confirm")
+                .request()
+                .rx()
+                .put(Entity.entity(jsonObject, MediaType.APPLICATION_JSON))
+                .whenComplete((res, t) -> {
+                    if (res != null) {
+                        LOG.info(res.getStatus() + " " + res.getStatusInfo().getReasonPhrase());
+                        res.close();
+                    }
+                });
+        return Response.accepted().build();
+    }
+```
+Payment service will join transaction as another participant. Any other card number than `0000-0000-0000`
+will cancel LRA transaction. Finishing the resource method is going to complete LRA transaction because 
+[Lra#end](https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/org/eclipse/microprofile/lra/annotation/ws/rs/LRA.html#end--)
+is set to `true`.
+
+```java
+    @PUT
+    @Path("/confirm")
+    // This resource method ends/commits LRA transaction as successfully completed
+    @LRA(value = LRA.Type.MANDATORY, end = true)
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Response makePayment(@HeaderParam(LRA.LRA_HTTP_CONTEXT_HEADER) URI lraId,
+                                Payment payment) {
+        if (!payment.cardNumber.equals("0000-0000-0000")) {
+            LOG.warning("Payment " + payment.cardNumber);
+            throw new IllegalStateException("Card " + payment.cardNumber + " is not valid! "+lraId);
+        }
+        LOG.info("Payment " + payment.cardNumber+ " " +lraId);
+        return Response.ok(JSON.createObjectBuilder().add("result", "success").build()).build();
+    }
+```
+If payment operation fails or timeouts, LRA transaction is going to be cancelled and all participants are going to 
+be notified through the compensation links which they provided during joining. 
+Practically that means that LRA coordinator is going to call the method 
+annotated with `@Compensate` with LRA id as a parameter. That is all we need in our booking service to clear 
+the seat reservation to make it available for another, hopefully more solvent customer.
+
+```java
+    @Compensate
+    public Response paymentFailed(URI lraId) {
+        LOG.info("Payment failed! " + lraId);
+        repository.clearBooking(lraId)
+                .ifPresent(booking -> {
+                    LOG.info("Booking for seat " + booking.getSeat().getId() + "cleared!");
+                    Optional.ofNullable(sseBroadcaster)
+                            .ifPresent(b -> b.broadcast(new OutboundEvent.Builder()
+                                    .data(booking.getSeat())
+                                    .mediaType(MediaType.APPLICATION_JSON_TYPE)
+                                    .build())
+                            );
+                });
+        return Response.ok(ParticipantStatus.Completed.name()).build();
+    }
+```
+
+![Photo by Kilyan Sockalingum on Unsplash](../assets/lra/seats-workflow.png)
 
 Example Cinema Booking project leveraging LRA is available on GitHub: 
 
 ![GitHub](../assets/Octocat.png)[danielkec/helidon-lra-example](https://github.com/danielkec/helidon-lra-example)
 
-It is a set of few simple K8s services prepared to be deployable to 
+It is a set of few simple K8s services prepared for deployment to
 [Oracle Kubernetes Engine](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm) 
 or locally to [Minikube](https://minikube.sigs.k8s.io/docs/). 
 
@@ -242,3 +381,10 @@ seat-booking-service         NodePort       10.96.54.129    <none>        8080:3
 You can see that right after deployment EXTERNAL-IP of the external LoadBalancer reads as `<pending>`
 because OCI is provisioning it for you. But if you invoke `kubectl get services` a little later it will 
 give you external ip address with Helidon Cinema example exposed on port 80.
+
+
+## Conclusion
+Keeping integrity in distributed systems with compensation logic isn't a new idea, 
+but can be quite complicated to achieve without special tooling.
+*MicroProfile Long Running Actions* is exactly that, a tooling hiding the complexities.
+So we can deliver 
