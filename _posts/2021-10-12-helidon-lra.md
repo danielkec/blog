@@ -115,7 +115,7 @@ Our services will be completely separated, integrated only through the REST API 
 
 Our booking service is going to reserve the seat first. The reservation service will start a new LRA transaction 
 and join it as a first transaction participant. All communication with the LRA coordinator is done behind the scenes
-and can be accessed through the LRA ID assigned to the new transaction in our JAX-RS method as a request header `Long-Running-Action`.
+and can be accessed through the LRA id assigned to the new transaction in our JAX-RS method as a request header `Long-Running-Action`.
 Note that LRA stays active after JAX-RS method finishes because 
 [Lra#end](https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/org/eclipse/microprofile/lra/annotation/ws/rs/LRA.html#end--)
 is set to `false`.
@@ -221,7 +221,7 @@ LRA implementation will do that for us automatically.
 ```
 The payment service will join this transaction as another participant. 
 Any card number other than `0000-0000-0000` will cancel the LRA transaction. 
-Finishing the resource method is going to complete LRA transaction because
+Finishing the resource method is going to complete the LRA transaction because
 [Lra#end](https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/org/eclipse/microprofile/lra/annotation/ws/rs/LRA.html#end--)
 is set to `true`.
 
