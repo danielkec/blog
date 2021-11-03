@@ -11,14 +11,14 @@ description: MicroProfile Long Running Actions (LRA) is a long-awaited specifica
 MicroProfile Long Running Actions (LRA) is a long-awaited specification that provides a lock-free, 
 and consequently loosely-coupled, approach to achieve consistency in a microservice environment.
 
-Long Running Actions follow the [SAGA pattern](https://en.wikipedia.org/wiki/Long-running_transaction), 
-where asynchronous compensations are used for maintaining eventual data integrity without needing to stage expensive isolation. 
-This method removes the additional burden of keeping an eye on your data integrity for great scalability, 
-so valued in the world of microservices.
+LRA follows the [SAGA pattern](https://en.wikipedia.org/wiki/Long-running_transaction), 
+where asynchronous compensations are used to maintain eventual data integrity without staging expensive isolation. 
+This method removes the additional burden of monitoring your data integrity and provides greater scalability -
+features that are highly valued in the world of microservices.
 
 ## LRA Transaction
-Every LRA transaction can be joined by multiple participants. Participants are JAX-RS resources with methods annotated with LRA annotations, 
-usually for joining `@LRA` and others to be called in case of compensating `@Compensate` or completing `@Complete` the transaction.
+Every LRA transaction can be joined by multiple participants. Participants are JAX-RS resources with methods annotated with LRA-specific annotations.  
+These annotations are used to join `@LRA` and others so they can be called together when compensating `@Compensate` or completing `@Complete` the transaction.
 
 ```java
 @Path("/example")
@@ -51,31 +51,30 @@ public class LRAExampleResource {
 }
 ```
 Every participant joining the LRA transaction needs to provide its compensation links, those URLs leading to resources annotated with
-`@Compensate`, `@Complete`, `@AfterLRA` etc. LRA coordinator keeps track of which resources to call when the LRA transaction state changes. 
-When the JAX-RS resource method is annotated with `@LRA(REQUIRES_NEW)`, every intercepted call starts a new LRA transaction within coordinator 
+`@Compensate`, `@Complete`, `@AfterLRA` etc. The LRA coordinator keeps track of which resources to call when the LRA transaction state changes. 
+When the JAX-RS resource method is annotated with `@LRA(REQUIRES_NEW)`, every intercepted call starts a new LRA transaction within the coordinator 
 and joins it as new participant before the resource method is invoked. 
-The id of the created LRA transaction is accessible in the resource method through `Long-Running-Action` header. 
-When the resource method invocation successfully finishes, the LRA transaction is reported to coordinator as closed, 
-and if participant has `@Complete` method, it is eventually invoked by coordinator again 
-with the appropriate LRA id header with the complete method of all the other participants which joined this particular LRA transaction.
+The id of the created LRA transaction is accessible in the resource method through the `Long-Running-Action` header. 
+When the resource method invocation successfully finishes, the LRA transaction is reported to the coordinator as closed. 
+If a participant has the `@Complete` method, then it is eventually invoked again by the coordinator with the appropriate LRA id header and the `@Complete` method of all of the other participants joined within the LRA transaction.
 
 ![Participants](../assets/lra/participant-coordinator.png)
 
-When a resource method finishes exceptionally, LRA is reported to coordinator as cancelled and coordinator calls
-`@Compensate` method on all participants registered under that transaction.
+When a resource method finishes exceptionally, LRA is reported to the coordinator as cancelled and the coordinator calls the 
+`@Compensate` method on all of the participants registered under that transaction.
 
 ![Participant cancel](../assets/lra/participant-cancel.png)
 
 When a transaction isn't closed before it's timeout is reached, 
-coordinator cancels the transaction and calls the compensate endpoints of the all participants of the timed-out transaction.
+the coordinator cancels the transaction and calls the compensate endpoints for all participants of the timed-out transaction.
 
 ![Participant timeout](../assets/lra/participant-timeout.png)
 
 ## LRA Coordinator
 
-Long Running Actions implementation in Helidon requires LRA coordinator for LRA orchestration across the cluster. 
+The Long Running Actions implementation in Helidon requires the LRA coordinator to orchestrate LRA across the cluster. 
 This is an extra service so you will need to enable the LRA functionality in your cluster. 
-LRA coordinator keeps track of which participant joined which LRA transaction 
+The LRA coordinator keeps track of which participant joined which LRA transaction 
 and calls the participant's LRA compensation resources when LRA transaction completes or is cancelled.
 
 Helidon supports:
@@ -84,8 +83,8 @@ Helidon supports:
 
 ### Narayana LRA Coordinator
 Narayana is a well-known transaction manager 
-with a long history of reliability in the field of distributed transactions built around Arjuna core. 
-Narayana LRA coordinator brings support for Long Running Actions and is the first LRA coordinator on the market.
+with a long history of reliability in the field of distributed transactions built around the Arjuna core. 
+The Narayana LRA coordinator brings support for Long Running Actions and is the first LRA coordinator on the market.
 
 ```shell
 wget https://search.maven.org/remotecontent?filepath=org/jboss/narayana/rts/lra-coordinator-quarkus/5.11.1.Final/lra-coordinator-quarkus-5.11.1.Final-runner.jar \
@@ -94,8 +93,8 @@ wget https://search.maven.org/remotecontent?filepath=org/jboss/narayana/rts/lra-
 ```
 
 ### Experimental Helidon LRA Coordinator
-Helidon brings its own coordinator that is easy to set up for development and testing purposes. 
-While it is not recommended for usage in production, it is a great lightweight solution for testing your LRA resources.
+Helidon now has its own experimental coordinator that is easy to set up for development and testing purposes. 
+While it is not recommended for use in production enviornments, it is a great lightweight solution for testing your LRA resources.
 
 ```shell
 docker build -t helidon/lra-coordinator https://github.com/oracle/helidon.git#:lra/coordinator/server
@@ -108,15 +107,15 @@ Let's take a look at a specific use case.
 
 ![Photo by Kilyan Sockalingum on Unsplash](../assets/lra/seats.jpeg)
 
-## Online cinema booking system
+## Online Cinema Booking System
 
-Our hypothetical cinema needs an online reservation system. We will split it in the two scalable services: 
-one for actual booking of the seat, and the second one for making the payment. 
+Our hypothetical cinema needs an online reservation system. We will split it into two scalable services: 
+one for booking the seat and another for making the payment. 
 Our services will be completely separated, integrated only through the REST API calls.
 
-Our booking service is going to reserve the seat first. Reservation service will start a new LRA transaction 
-and join it as a first transaction participant. All communication with LRA coordinator is done behind the scenes, 
-and we can just access LRA ID assigned to the new transaction in our JAX-RS method as request header `Long-Running-Action`.
+Our booking service is going to reserve the seat first. The reservation service will start a new LRA transaction 
+and join it as a first transaction participant. All communication with the LRA coordinator is done behind the scenes
+and can be accessed through the LRA ID assigned to the new transaction in our JAX-RS method as a request header `Long-Running-Action`.
 Note that LRA stays active after JAX-RS method finishes because 
 [Lra#end](https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/org/eclipse/microprofile/lra/annotation/ws/rs/LRA.html#end--)
 is set to `false`.
@@ -153,8 +152,8 @@ is set to `false`.
 
 ![Create new seat booking](../assets/lra/seats-create.png)
 
-When a seat is successfully reserved, payment service is going to be called under the same LRA transaction. 
-Artificial header `Long-Running-Action` is present in the response, so we can even access it on the client.
+Once a seat is successfully reserved, payment service is going to be called under the same LRA transaction. 
+An artificial header `Long-Running-Action` is present in the response so that it can be accessed on the client.
 
 ```javascript
     reserveButton.click(function () {
@@ -174,7 +173,7 @@ Artificial header `Long-Running-Action` is present in the response, so we can ev
             });
     });
 ```
-We can call other backend resources with same LRA transaction, just by setting `Long-Running-Action` again.
+We can call other backend resources with the same LRA transaction just by setting `Long-Running-Action` again.
 ```javascript
     function makePayment(cardNumber, amount, lraId) {
         return fetch('/booking/payment', {
@@ -189,8 +188,8 @@ We can call other backend resources with same LRA transaction, just by setting `
 ```
 ![Payment form](../assets/lra/seats-pay.png)
 
-Backend calls different service over JAX-RS client, 
-we don't need to set `Long-Running-Action` header to propagate LRA transaction - as with JAX-RS clients, 
+The backend calls different service over the JAX-RS client, 
+we don't need to set the `Long-Running-Action` header to propagate the LRA transaction. As with all JAX-RS clients, 
 LRA implementation will do that for us automatically.
 
 ```java
@@ -220,8 +219,8 @@ LRA implementation will do that for us automatically.
         return Response.accepted().build();
     }
 ```
-Payment service will join transaction as another participant. 
-Any card number other than `0000-0000-0000` will cancel LRA transaction. 
+The payment service will join this transaction as another participant. 
+Any card number other than `0000-0000-0000` will cancel the LRA transaction. 
 Finishing the resource method is going to complete LRA transaction because
 [Lra#end](https://download.eclipse.org/microprofile/microprofile-lra-1.0/apidocs/org/eclipse/microprofile/lra/annotation/ws/rs/LRA.html#end--)
 is set to `true`.
@@ -243,11 +242,11 @@ is set to `true`.
         return Response.ok(JSON.createObjectBuilder().add("result", "success").build()).build();
     }
 ```
-If payment operation fails or times out, LRA transaction is going to be cancelled and all participants 
-are going to be notified through the compensation links provided during joining. 
-In practice that means that LRA coordinator is going to call the method annotated with `@Compensate` 
-with LRA id as a parameter. That is all we need in our booking service to clear the seat reservation 
-to make it available for another, hopefully more solvent customer.
+If the payment operation fails or times out, the LRA transaction is going to be cancelled and all participants 
+are going to be notified through the compensation links provided when they joined. 
+The LRA coordinator is going to call the method annotated with `@Compensate` 
+with the LRA id as a parameter. That is all we need in our booking service to clear the seat reservation 
+and make it available for another customer.
 
 ```java
     @Compensate
@@ -272,7 +271,7 @@ A sample Cinema Booking project leveraging LRA is available on GitHub:
 
 ![GitHub](../assets/Octocat.png)[danielkec/helidon-lra-example](https://github.com/danielkec/helidon-lra-example)
 
-It is a set of few simple K8s services prepared for deployment to
+This sample project provides a set simple Kubernetes (K8s) services prepared for deployment to
 [Oracle Kubernetes Engine](https://docs.oracle.com/en-us/iaas/Content/ContEng/Concepts/contengoverview.htm) 
 or locally to [Minikube](https://minikube.sigs.k8s.io/docs/). 
 
@@ -289,15 +288,15 @@ all we need to do is build the docker images.
 ```shell
 bash build.sh;
 ```
-Note that the first build can take few minutes for all the artifacts to download. 
-Subsequent builds are going to be much faster as the layer with dependencies gets cached.
+Note that the first build can take few minutes for all of the artifacts to download. 
+Subsequent builds are going to be much faster as the layer with dependencies is cached.
 
 #### Deploy to minikube
 ```shell
 bash deploy-minikube.sh
 ```
-Script recreates whole namespace, any previous state of the `cinema-reservation` is obliterated. 
-Deployment is exposed via NodePort and URL with port is printed at the end of the output:
+This script recreates the whole namespace, any previous state of the `cinema-reservation` is obliterated. 
+Deployment is exposed via the NodePort and the URL with port is printed at the end of the output:
 ```shell
 namespace "cinema-reservation" deleted
 namespace/cinema-reservation created
@@ -311,24 +310,24 @@ deployment.apps/lra-coordinator created
 deployment.apps/payment-service created
 deployment.apps/seat-booking-service created
 service/cinema-reservation exposed
-Application cinema-reservation will be available at http://192.168.99.107:31584
+Application cinema-reservation will be available at http://192.0.2.254:31584
 ```
 
 ### Deploy to OCI OKE cluster
 Prerequisites:
-* [OKE k8s cluster](https://docs.oracle.com/en/learn/container_engine_kubernetes)
-* OCI Cloud Shell with git, docker and kubectl configured for access OKE cluster
+* [OKE K8s cluster](https://docs.oracle.com/en/learn/container_engine_kubernetes)
+* OCI Cloud Shell with git, docker and kubectl configured to access the Oracle Container Engine for Kubernetes (OKE) cluster
   
 #### Pushing images to your OCI Container registry
-The first thing you need is a place to push your docker images to so OKE k8s have a location to pull from.
+The first thing you will need is a place to push your docker images to so that OKE K8s have a location to pull from.
 [Container registry](https://docs.oracle.com/en-us/iaas/Content/Registry/Concepts/registryprerequisites.htm#Availab)
-is part of your OCI tenancy so to be able to push in it you just need to
-`docker login <REGION_KEY>.ocir.io` in it.
-Username of the registry is `<TENANCY_NAMESPACE>/joe@acme.com` 
-where `joe@acme.com` is your OCI user. 
+is part of your OCI tenancy, so to be able to push to it you need to log in:
+`docker login <REGION_KEY>.ocir.io` 
+Username of the registry is `<TENANCY_NAMESPACE>/joe@example.com` 
+where `joe@example.com` is your OCI user. 
 Password will be [auth token](https://docs.oracle.com/en-us/iaas/Content/Registry/Tasks/registrygettingauthtoken.htm) 
-of your `joe@acme.com`
-To get your region key and tenancy namespace just execute following cmd in your OCI Cloud Shell:
+of your `joe@example.com`
+To get your region key and tenancy namespace, execute the following command in your OCI Cloud Shell:
 
 ```shell
 # Get tenancy namespace and container registry
@@ -337,8 +336,8 @@ echo "Container registry: ${OCI_CONFIG_PROFILE}.ocir.io" && \
 echo "Tenancy namespace: $(oci os ns get --query "data" --raw-output)" && \
 echo "" && \
 echo "docker login ${OCI_CONFIG_PROFILE}.ocir.io" && \
-echo "Username: $(oci os ns get --query "data" --raw-output)/joe@acme.com" && \
-echo "Password: --- Auth token for user joe@acme.com" && \
+echo "Username: $(oci os ns get --query "data" --raw-output)/joe@example.com" && \
+echo "Password: --- Auth token for user joe@example.com" && \
 echo ""
 ```
 Example output:
@@ -347,13 +346,13 @@ Container registry: eu-frankfurt-1.ocir.io
 Tenancy namespace: fr8yxyel2vcv
 
 docker login eu-frankfurt-1.ocir.io
-Username: fr8yxyel2vcv/joe@acme.com
-Password: --- Auth token for user joe@acme.com
+Username: fr8yxyel2vcv/joe@example.com
+Password: --- Auth token for user joe@example.com
 ```
-Save your container registry, tenancy namespace and auth token for later.
+Save your container registry, tenancy namespace, and auth token for later.
 
 When your local docker is logged in to OCI Container Registry, you can execute `build-oci.sh`
-with container registry and tenancy namespace as the parameters.
+with the container registry and tenancy namespace as the parameters.
 
 Example:
 ```shell
@@ -372,18 +371,18 @@ docker push eu-frankfurt-1.ocir.io/fr8yxyel2vcv/cinema-reservation/payment-servi
 ```
 The script will print out docker build commands before executing them. 
 Note that the first build can take few minutes for all the artifacts to download. 
-Subsequent builds are going to be much faster as the layer with dependencies gets cached.
+Subsequent builds are going to be much faster as the layer with dependencies is cached.
 
-To make your pushed images publicly available, open your OCI console
+To make your pushed images publicly available, open your OCI console and set both repositories to **Public**:
 **Developer Tools**>**Containers & Artifacts**>
 [**Container Registry**](https://cloud.oracle.com/registry/containers/repos)
-and set both repositories to **Public**
+
 
 ![https://cloud.oracle.com/registry/containers/repos](../assets/lra/public-registry.png)
 
 #### Deploy to OKE
-You can use freshly cloned helidon-lra-example repository in OCI Cloud shell as all you need are the k8s descriptors. 
-Your changes are built to the images you have pushed in the previous step.
+You can use the cloned helidon-lra-example repository in the OCI Cloud shell with your K8s descriptors. 
+Your changes are built to the images you pushed in the previous step.
 
 In the OCI Cloud shell: 
 ```shell
@@ -396,20 +395,20 @@ kubectl get services
 Example output:
 ```shell
 NAME                         TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
-booking-db                   ClusterIP      10.96.118.249   <none>        3306/TCP         34s
-lra-coordinator              NodePort       10.96.114.48    <none>        8070:32434/TCP   33s
-oci-load-balancing-service   LoadBalancer   10.96.170.39    <pending>     80:31192/TCP     33s
-payment-service              NodePort       10.96.153.147   <none>        8080:30842/TCP   32s
-seat-booking-service         NodePort       10.96.54.129    <none>        8080:32327/TCP   32s
+booking-db                   ClusterIP       192.0.2.254    <none>        3306/TCP         34s
+lra-coordinator              NodePort        192.0.2.253    <none>        8070:32434/TCP   33s
+oci-load-balancing-service   LoadBalancer    192.0.2.252    <pending>     80:31192/TCP     33s
+payment-service              NodePort        192.0.2.251    <none>        8080:30842/TCP   32s
+seat-booking-service         NodePort        192.0.2.250    <none>        8080:32327/TCP   32s
 ```
 
-You can see that right after deployment EXTERNAL-IP of the external LoadBalancer reads as `<pending>`
-because OCI is provisioning it for you. But if you invoke `kubectl get services` a little later, 
-then it will give you an external IP address with Helidon Cinema example exposed on port 80.
+You can see that right after the deployment, the EXTERNAL-IP of the external LoadBalancer reads as `<pending>`
+because OCI is provisioning it for you. You can invoke `kubectl get services` a little later 
+and see that it now gives you an external IP address with Helidon Cinema example exposed on port 80.
 
 ## Conclusion
-Keeping integrity in distributed systems with compensation logic isn't a new idea, 
-but can be quite complicated to achieve without special tooling.
+Maintaining integrity in distributed systems with compensation logic isn't a new idea, 
+but it can be quite complicated to achieve without special tooling.
 *MicroProfile Long Running Actions* is exactly that, 
 tooling that hides the complexities so you can focus on business logic.
 
