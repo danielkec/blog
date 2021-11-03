@@ -3,6 +3,7 @@ layout: post
 title:  "Long Running Actions with Helidon"
 date:   2021-10-12 23:40:26 +0200
 categories: helidon lra saga
+description: MicroProfile Long Running Actions (LRA) is a long-awaited specification that provides a lock-free, and consequently loosely-coupled, approach to achieve consistency in a microservice environment.
 ---
 
 ![Photo from Unsplash](../assets/lra/switch-operator.png)
