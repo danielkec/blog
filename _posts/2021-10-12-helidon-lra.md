@@ -374,6 +374,7 @@ Note that the first build can take few minutes for all the artifacts to download
 Subsequent builds are going to be much faster as the layer with dependencies is cached.
 
 To make your pushed images publicly available, open your OCI console and set both repositories to **Public**:
+
 **Developer Tools**>**Containers & Artifacts**>
 [**Container Registry**](https://cloud.oracle.com/registry/containers/repos)
 
