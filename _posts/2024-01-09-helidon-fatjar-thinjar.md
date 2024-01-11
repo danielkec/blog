@@ -8,7 +8,7 @@ description: It's 2024! Use ThinJar!
 
 ![Rapid-Reset Banner](../assets/fatjar/banner.png)
 
-FatJars have been with us for a long time now. At first, it enabled all the Java apps to be distributed as a single jar archive, without any hassle about the dependency jars. But how is that achieved? By repackaging all the dependencies! Repackaging not only breaks Java module system, but also considerably slows down your CI/CD pipeline!
+FatJars have been with us for a long time now. At first, they enabled Java apps to be distributed as a single jar archive, without any hassle about the dependency jars. But how is that achieved? By repackaging all the dependencies! Repackaging not only breaks the Java module system, but also considerably slows down your CI/CD pipeline!
 
 ## FatJar
 Fatjar is a way of packaging java application in the single jar, all classes from all the dependencies are repackaged in a single new jar.
@@ -26,7 +26,7 @@ Cons:
 * Breaks CDI beans archive descriptors
 
 ## ThinJar
-ThinJar is just a fancy name for good old keeping all your dependencies in accompanying /lib folder. Very same approach as statically linked libraries in C programs.
+ThinJar is just a fancy name for keeping all your dependencies in accompanying /lib folder. Very same approach as statically linked libraries in C programs.
 
 ![ThinJar with MANIFEST defined classpath](../assets/fatjar/thinjar-content.png)
 
@@ -41,7 +41,7 @@ Cons:
 * More hassle when setting up the classpath
 
 ## Container image
-Who is who becomes clear when creating a container image. While with FatJar, you have no choice and need to copy whole jar at once:
+Who is who becomes clear when creating a container image. With a FatJar, you have no choice and need to copy the whole jar at once:
 
 ```dockerfile
 COPY --from=build /helidon/target/quickstart.jar ./
@@ -54,7 +54,7 @@ COPY --from=build /helidon/target/libs ./libs
 COPY --from=build /helidon/target/quickstart.jar ./
 ```
 
-As the dependencies are being copied to the container image in a standalone step, it also gets cached separately. Next time, you fix something and just change the business code. You don't actually need to push all the unchanged dependencies to your image repository. You push just a small archive, saving your time and bandwidth.
+As the dependencies are being copied to the container image in a standalone step, it also gets cached separately. The next time you fix something and just change the business code, you don't actually need to push all the unchanged dependencies to your image repository. You push just a small archive, saving your time and bandwidth.
 Let's compare it with a quick demo.
 
 ```bash
@@ -74,7 +74,7 @@ We can see that FatJar creates a single 2Mb large layer.
 
 ![Docker image with fatjar](../assets/fatjar/fatjar-image-history.png)
 
-While ThinJar creates two layers, large one with dependencies only, and small one with just the business code.
+While ThinJar creates two layers: a large one with dependencies only, and small one with just the business code.
 
 ```bash
 docker history helidon/demo-thinjar:latest
