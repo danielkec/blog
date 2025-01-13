@@ -21,14 +21,14 @@ Let's take a look at Virtual Threads from a webserver perspective.
 
 ## Expensive Threads
 Starting kernel thread is very expensive, that is a performance problem for all webservers. 
-Every kernel thread created by JVM needs megabytes of memory, and not just any memory, off-heap memory!
-It takes quite a time to create a physical thread, a lot of memory is required which we can't really limit of manage  
-We did overcome that by pooling the threads so we can reuse those already started.
+Every kernel thread created by JVM needs megabytes of off-heap memory.
+It takes quite a lot of time to create a physical thread and a lot of memory is required which we can't really limit or manage.  
+By pooling the threads so we can reuse those already that have already started, we can improve performance.
 
 <img src="../assets/virtual-threads/thread-pool.jpg" width="40%"/>
  
-But using thread pools is not enough, as webserver usually need more threads than there is available CPUs, 
-the threads needs to take turns on the available cores. They need to be organized and scheduled
+But using thread pools is not enough, as webserver usually needs more threads than are available for CPUs. 
+The threads need to take turns on the available cores and they need to be organized and scheduled
 to run on CPUs.
 
 Scheduling of the kernel threads on the CPU is done by operating system scheduler,
@@ -38,10 +38,10 @@ or when sleep instruction is executed. Or thread is preemptively interrupted to 
 So instead of "burning CPU" just to wait, other threads have a chance to run it's business on the CPU. 
 
 Scheduler exchanges the threads running on the CPU in a process known as 
-[Context switching](https://en.wikipedia.org/wiki/Context_switch), 
-during this process a lot of bureaucracy needs to be done to keep the thread state for later 
+[Context switching](https://en.wikipedia.org/wiki/Context_switch). 
+During this process, a lot of overhead needs to be done to keep the thread state for later 
 and it's a lot of work to move around registers and stack pointers.
-As you can imagine this process can be quite expensive and get even more expensive whe we have 
+As you can imagine this process can be quite expensive and can get even more expensive when we have 
 a lot of physical threads.
 
 ## Non-Blocking code
@@ -51,7 +51,7 @@ we can keep low amount of physical threads very, very busy, **not letting them b
 them much chance for context-switching.
 
 To avoid blocking, asynchronous coding needs to be used. 
-Code newer waits for anything, each result we need to wait for is executed on different thread.
+Newer code waits, so, as a result, we need to wait for executed on a different thread.
 Instead of blocking, callback function needs to be provided, so some other thread can execute it.
 
 As a direct result of avoiding blocking, we are loosing natural backpressure. 
@@ -73,7 +73,7 @@ So complicated that when you try to implement the interfaces yourself IntelliJ w
 
 <img src="../assets/virtual-threads/idea-warn.png"  width="40%"/>
 
-Instead of implementing it, you can use already existing, highly optimized libraries providing reactive primitives 
+Instead of implementing it, you can use existing, highly optimized libraries providing reactive primitives 
 with operators implementing Reactive Streams, usually in a builder like pattern. 
 
 Just to mention few:
@@ -105,13 +105,13 @@ Reactive handler for HTTP GET method in Helidon 3 SE used to look like this:
 No blocking was allowed, for calling another service, reactive client had to be used. 
 You can see the operator usage in above example as Helidon's APIs used reactive operators.
 
-With reactive paradigm our Java experience changed in to somewhat more manageable callback orchestration, 
+With reactive paradigm our Java experience changed into a more manageable callback orchestration, 
 our code started to resemble source code from the "Matrix" movie.
 
 <img src="../assets/virtual-threads/reactive-hell.png"/>
 
 Sadly, unlike in the movie, you won't start to see the meaning in the code if you stare at reactive operators long enough.
-Actually if you bump in to your own reactive code after few weeks, it's hard to figure out what is going on.
+Actually if you bump into your own reactive code after few weeks, it's hard to figure out what is going on.
 Reactive programming has a steep learning curve, it is very hard to maintain and debug.
 And if you need to use blocking code, you need to start a new thread and offload the blocking operation to it.
 
@@ -196,10 +196,10 @@ If you follow that a little deeper in [java.lang.VirtualThread](https://github.c
     }
 ```
 
-And that is the trick, Virtual Threads are implementation of **Continuations** in Java, and all known blocking operations in JDK
-are aware of them! Ha! Feature that Go developers have for some time now is finally available in Java!
+And that is the trick, Virtual Threads are an implementation of **Continuations** in Java, and all known blocking operations in JDK
+are aware of them! This is a feature that Go developers have had for some tima and it is finally available in Java!
 
-Actual scheduler used for mounting virtual threads on top of a physical threads(called by fancy term "carrier threads")
+The actual scheduler used for mounting virtual threads on top of a physical threads(called by fancy term "carrier threads")
 is a marvelous and battle-proven piece of code [ForkJoinPool](https://github.com/openjdk/jdk/blob/672c413c61d9b155020a0fd4bd1c2bc0661a60fb/src/java.base/share/classes/java/lang/VirtualThread.java#L1416). 
 
 ### Green Threads
@@ -219,7 +219,7 @@ Doug Lea's implementation of the [ForkJoinPool](https://docs.oracle.com/en/java/
 
 Now, since JDK 21 release, we have Continuations in Java and scheduling is done by ForkJoinPool. 
 But it still sounds like a context switching right? It still is, but this time it doesn't have to be so abstract, 
-and we have battery of cool performance tricks available. 
+and we have a battery of cool performance tricks available. 
 Instead of expensive OS scheduled context switching, we have highly performant scheduling tailored to the Java runtime needs.
 
 ### Freezing and Thawing
@@ -248,11 +248,11 @@ startServer()
 readSocket()
 yieldContinuation()
 ```
-Each time there are no new data available on the socket `yieldContinuation()` is going to be reached by virtual thread and 
+Each time there is no new data available on the socket `yieldContinuation()` is going to be reached by virtual thread and 
 virtual thread is going to be unmounted from carrier thread. Its context is going to be frozen until the virtual thread is 
 scheduled to run again on some of the carrier threads and the context is thawed.
 
-Cool part is that we don't have to save and freeze whole stack, only the part related to the virtual thread.
+The cool part is that we don't have to save and freeze the whole stack, only the part related to the virtual thread.
 But that is not all, we also don't have to move around all the frames, as you can see, our hypothetical server
 rarely reaches outside the endless loop and blocking also happens mainly in the loop. So optimizing 
 thawing process to freeze/thaw only the part of the stack related to the calls inside the loop offers itself.
@@ -262,7 +262,7 @@ that is a stack frame surrogate which lazily thaws more stack frames(stack chunk
 
 <img src="../assets/virtual-threads/stack-animation.gif"/>
 
-That way even smaller part of the stack is being moved around.
+That way even smaller parts of the stack are being moved around.
 And that is not all, frozen stack chunks stored in heap are being 
 compressed when not used, further reducing the memory needed for running our
 little hypothetical server.
