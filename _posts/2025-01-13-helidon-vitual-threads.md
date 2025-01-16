@@ -23,13 +23,14 @@ Let's take a look at Virtual Threads from a webserver perspective.
 Starting kernel thread is very expensive, that is a performance problem for all webservers. 
 Every kernel thread created by JVM needs megabytes of off-heap memory.
 It takes quite a lot of time to create a physical thread and a lot of memory is required which we can't really limit or manage.  
-By pooling the threads so we can reuse those already that have already started, we can improve performance.
+This issue can be partially fixed by pooling the threads so we can reuse those already started.
+Instead of starting new thread each time we need one, we can reach in a pool where we leave already used threads.  
 
 <img src="../assets/virtual-threads/thread-pool.jpg" width="40%"/>
  
-But using thread pools is not enough, as webserver usually needs more threads than are available for CPUs. 
-The threads need to take turns on the available cores and they need to be organized and scheduled
-to run on CPUs.
+But using thread pools is not enough, as webserver usually needs more threads than there are CPUs available. 
+The threads need to take turns on the available cores, and they need to be organized and scheduled
+to run on those CPUs.
 
 Scheduling of the kernel threads on the CPU is done by operating system scheduler,
 and as you can imagine, OS scheduler is pretty busy. To help with effective work scheduling 
@@ -50,8 +51,8 @@ We know way better the context of what needs to be executed and when. By schedul
 we can keep low amount of physical threads very, very busy, **not letting them block** and therefore not giving
 them much chance for context-switching.
 
-To avoid blocking, asynchronous coding needs to be used. 
-Newer code waits, so, as a result, we need to wait for executed on a different thread.
+To avoid blocking, asynchronous coding needs to be used.
+Code never waits for anything, each result we need to wait for is executed on different thread.
 Instead of blocking, callback function needs to be provided, so some other thread can execute it.
 
 As a direct result of avoiding blocking, we are loosing natural backpressure. 
@@ -150,7 +151,7 @@ Imperative handler for HTTP GET method in Helidon 4 SE:
 ```
 
 Because all Helidon 4 handlers are executed on virtual threads, blocking the thread is not a problem. 
-In above example when client is blocking Virtual Thread until it receive response, virtual thread 
+In above example, when client is blocking Virtual Thread until it receive response, virtual thread 
 **yields** it's "Carrier Thread" so it can be used by other virtual thread. How does that work?
 
 Let's take a look in [java.lang.Thread](https://github.com/openjdk/jdk/blob/672c413c61d9b155020a0fd4bd1c2bc0661a60fb/src/java.base/share/classes/java/lang/Thread.java#L479) 
@@ -197,7 +198,7 @@ If you follow that a little deeper in [java.lang.VirtualThread](https://github.c
 ```
 
 And that is the trick, Virtual Threads are an implementation of **Continuations** in Java, and all known blocking operations in JDK
-are aware of them! This is a feature that Go developers have had for some tima and it is finally available in Java!
+are aware of them! This is a feature that Go developers have had for some time, and it is finally available in Java!
 
 The actual scheduler used for mounting virtual threads on top of a physical threads(called by fancy term "carrier threads")
 is a marvelous and battle-proven piece of code [ForkJoinPool](https://github.com/openjdk/jdk/blob/672c413c61d9b155020a0fd4bd1c2bc0661a60fb/src/java.base/share/classes/java/lang/VirtualThread.java#L1416). 
@@ -237,7 +238,7 @@ startServer() {
 ```
 
 It's a very typical endless conditional loop calling repeatedly blocking method `readSocket()`,
-stack of socket will look something like this:
+stack of the socket will look something like this:
 ```properties
 
 runContinuation()
@@ -248,8 +249,8 @@ startServer()
 readSocket()
 yieldContinuation()
 ```
-Each time there is no new data available on the socket `yieldContinuation()` is going to be reached by virtual thread and 
-virtual thread is going to be unmounted from carrier thread. Its context is going to be frozen until the virtual thread is 
+Each time there is no new data available on the socket, `yieldContinuation()` is going to be reached by virtual thread and 
+virtual thread is going to be unmounted from carrier thread. It's context is going to be frozen until the virtual thread is 
 scheduled to run again on some of the carrier threads and the context is thawed.
 
 The cool part is that we don't have to save and freeze the whole stack, only the part related to the virtual thread.
