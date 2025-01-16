@@ -126,7 +126,7 @@ With Virtual Threads it gets easy again, Virtual Threads are doing exactly same 
 avoiding Context Switching by moving the work scheduling to JVM. Closer to the context of our 
 JVM workload, but it is no longer a job of developers to plan it with callbacks like with reactive programming. 
 
-<img src="../assets/virtual-threads/loom.png" width="40%"/>
+<img src="../assets/virtual-threads/loom.png"/>
 
 With Virtual Threads you get the same performance advantages like with reactive coding, 
 just the coding part is much nicer since you can use the imperative coding style, and the magic happens behind the scenes.
@@ -239,8 +239,7 @@ startServer() {
 
 It's a very typical endless conditional loop calling repeatedly blocking method `readSocket()`,
 stack of the socket will look something like this:
-```properties
-
+```
 runContinuation()
 io.helidon....
 io.helidon....
