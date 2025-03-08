@@ -178,10 +178,12 @@ Have to look for any opened IO and close it before snapshot is done. Also applic
 normal JDK run app before snapshotting unlike the instrumented runs of Leyden or Native Image PGO.
 
    
-Your Helidon application can start even faster, your pods scale quicker and you got quite some options! 
+Your Helidon application can start even faster, your pods scale quicker, and you got quite some options! 
 
 
-Benchmark execution was done on [OCI](https://www.oracle.com/cloud/) VM.Standard3.Flex VM with following specs.
+[Benchmark project](https://github.com/helidon-io/helidon-labs/tree/main/benchmarks/startup) can be found in 
+[Helidon Labs repository](https://github.com/helidon-io/helidon-labs). Benchmark execution was 
+done on [OCI](https://www.oracle.com/cloud/) VM.Standard3.Flex VM with following specs.
 ```yaml
 Image:               Oracle-Linux-8.10-2025.01.31-0
 Model name:          Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz
