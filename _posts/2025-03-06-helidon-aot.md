@@ -11,15 +11,15 @@ description: Leyden vs. NativeImage vs. CRaC, which makes Helidon start faster?
 # Helidon and AOT startup optimization benchmark
 _Leyden vs. NativeImage vs. CRaC, which makes Helidon start faster?_
 
-It is a great time to be a Java developer! Java ecosystem is thriving and we have so many great tools to choose from.
-There is an old cliche about Java starting long time. It's not true anymore, but yes it can take some
+It is a great time to be a Java developer! Java ecosystem is thriving, and we have so many great tools to choose from.
+There is an old cliché about Java long startup time. It's not true anymore, but yes it can take some
 time to get at the full power after our Java application started. It's by design, Java applications are utilizing 
 JIT, Just In Time compilation to the native code. This is happening at runtime and with a good reason, 
 because based on the workload, JIT can actually optimize compiled native code. And what is more, it can do it 
-speculatively! Rollback previous optimizations if it's heuristics find the way it can optimized better, based 
-on some change in the workload for example.
+speculatively! Rollback previous optimizations if it's heuristics find the way it can be optimized better, based 
+on change in the workload for example.
 
-But there are ways how we can speed-up the startup and the warming up phase dramatically. Three most promising 
+But there are ways how we can speed up the startup and the warming up phase dramatically. Three most promising 
 technologies available are:
 - [Leyden project](https://openjdk.org/projects/leyden/)
 - [GraalVM Native Image](ttps://www.graalvm.org/latest/reference-manual/native-image/)
@@ -168,11 +168,14 @@ All the options are actually super cool, Java ecosystem is after 30 years liveli
 interesting findings in this benchmark. 
 
  - **Leyden** - Build we have tested is still EA, and it gets better and better. What is most interesting is that 
-from all the options, Leyden doesn't any special treatment from your application of libraries your are using.
+from all the options, Leyden doesn't need any special treatment from your application or libraries you are using.
+
  - **Native Image** - I was quite surprised by PGO performance! Those numbers just speak for themselves.
 What can get little tricky is making your application compatible with Native Image, it can take some time 
 to figure out what should be invoked at build time and what not, where is reflection used so aggressive tree-shaking
-doesn't throw away something important and so on.
+doesn't throw away something important and so on. Also from all the options, native image binary is the only one
+which doesn't need JDK to run, that can make you docker images tiny and efficient. 
+
  - **CraC** - CRaC has got really cool with new Warp engine, now you can do snapshot even in the docker build!
 Have to look for any opened IO and close it before snapshot is done. Also application is performing just like
 normal JDK run app before snapshotting unlike the instrumented runs of Leyden or Native Image PGO.
