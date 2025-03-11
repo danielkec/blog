@@ -6,7 +6,7 @@ categories: [helidon, leyden, native-image, crac]
 description: Leyden vs. NativeImage vs. CRaC, which makes Helidon start faster?
 ---
 
-![Helidon and Virtual Threads Banner](../assets/aot-bench/aot-bench.png)
+![Helidon and AOT startup optimization benchmark banner](../assets/aot-bench/aot-bench.png)
 
 # Helidon and AOT startup optimization benchmark
 _Leyden vs. NativeImage vs. CRaC, which makes Helidon start faster?_
@@ -51,7 +51,7 @@ and use training profile data stored in the iprof file for a second AOT compilat
 It is a technology coming from [Azul Systems](https://www.azul.com/products/components/crac/) and was until 
 recently based on [CRIU](https://criu.org) a project to implement checkpoint/restore functionality 
 for Linux(you are probably using it very often with Podman or Docker).
-Not long ago a [new CRAC engine called WARP](https://foojay.io/today/warp-the-new-crac-engine/) was introduced by Azul 
+Not long ago a [new CRaC engine called Warp](https://foojay.io/today/warp-the-new-crac-engine/) was introduced by Azul 
 and that brings very exciting ability to do snapshotting in a docker build phase.
 
 
@@ -95,6 +95,7 @@ Last test is another wrk load test, this time for 15 second to se if application
 - **Warmup start** - measuring how long it takes to start the app for the training/warmup, instrumented or not
 - **Warmup req/s** - measuring how many requests per seconds is application able to serve during the warmup using [wrk tool](https://github.com/wg/wrk) `wrk -c 20 -t 10 -d 20s http://localhost:8080`
 - **AOT/build sec** - measuring the build phase time in seconds, including warmup/training which takes 20 seconds
+
 ### Run phase:
 - **Startup ms** - measuring startup time of the AOT optimized pre-warmed application
 - **5s run req/s** - first short requests per second measurement,
