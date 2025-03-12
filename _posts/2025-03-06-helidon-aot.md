@@ -33,6 +33,9 @@ caching the optimization data in CDS(Cached Data Storage) files. You can start y
 a CDS recording [training run](https://openjdk.org/projects/leyden/notes/05-training-runs),
 do a "warmup" and then save the CDS archive for later use. When you use it, your application starts way faster and already optimized!
 
+The JDK team is working to add more advanced AOT optimizations to the Leyden prototype using the framework introduced in 
+[JEP 483](https://openjdk.org/jeps/483), with the hope that these optimizations will eventually be available in future JDK releases.
+
 
 ## GraalVM Native Image
 [GraalVM Native Image](https://www.graalvm.org/latest/reference-manual/native-image/) is a technology coming from [Oracle Labs](https://labs.oracle.com/) 
@@ -109,7 +112,7 @@ Last test is another wrk load test, this time for 15 second to se if application
 
 
 ## Results
-Here are the results from March 7 benchmark execution round, and we can see it's quite interesting.
+Here are the results from March 7th benchmark execution round 2025030701, and we can see it's quite interesting.
 
 ```markdown
 Name                     |   AOT/build sec| Warmup start ms| Warmup req/s|  Startup ms| 5ss run req/s| 15ss run req/s
@@ -169,26 +172,30 @@ time-consuming.
 All the options are actually super cool, Java ecosystem is after 30 years livelier than ever! There is some 
 interesting findings in this benchmark. 
 
- - **Leyden** - Build we have tested is still EA, and it gets better and better. What is most interesting is that 
-from all the options, Leyden doesn't need any special treatment from your application or libraries you are using.
+ - **Leyden** - Build 24-leyden+2-8 (2024-6-20) we have tested is still EA, and Leyden gets better and better over time.
+Some features in Leyden have been integrated into the JDK mainline repository and will become available in
+JDK 24 via [JEP 483: Ahead-of-Time Class Loading & Linking](https://openjdk.org/jeps/483). We will definitely 
+test it in the next round of the benchmark! What is most interesting is that from all the options,
+Leyden doesn't need any special treatment from your application or libraries you are using.
 
  - **Native Image** - I was quite surprised by PGO performance! Those numbers just speak for themselves.
-What can get little tricky is making your application compatible with Native Image, it can take some time 
+What can get quite tricky is making your application compatible with Native Image, it can take some time 
 to figure out what should be invoked at build time and what not, where is reflection used so aggressive tree-shaking
 doesn't throw away something important and so on. Also from all the options, native image binary is the only one
-which doesn't need JDK to run, that can make you docker images tiny and efficient. 
+which doesn't need JDK to run, that can make your docker images tiny and efficient. 
 
- - **CraC** - CRaC has got really cool with new Warp engine, now you can do snapshot even in the docker build!
-Have to look for any opened IO and close it before snapshot is done. Also application is performing just like
-normal JDK run app before snapshotting unlike the instrumented runs of Leyden or Native Image PGO.
+ - **CraC** - CRaC has got really cool with new [Warp engine](https://foojay.io/today/warp-the-new-crac-engine/), 
+now you can do snapshot even in the docker build! You have to look for any opened IO in your application and close it before 
+snapshot is done. Also, application is performing just like normal JDK run app before snapshotting unlike 
+the instrumented runs of Leyden or Native Image PGO.
 
    
 Your Helidon application can start even faster, your pods scale quicker, and you got quite some options! 
 
 
 [Benchmark project](https://github.com/helidon-io/helidon-labs/tree/main/benchmarks/startup) can be found in 
-[Helidon Labs repository](https://github.com/helidon-io/helidon-labs). Benchmark execution was 
-done on [OCI](https://www.oracle.com/cloud/) VM.Standard3.Flex VM with following specs.
+[Helidon Labs repository](https://github.com/helidon-io/helidon-labs). Benchmark round 2025030701 was 
+executed on [OCI](https://www.oracle.com/cloud/) VM.Standard3.Flex VM with following specs.
 ```yaml
 Image:               Oracle-Linux-8.10-2025.01.31-0
 Model name:          Intel(R) Xeon(R) Platinum 8358 CPU @ 2.60GHz
