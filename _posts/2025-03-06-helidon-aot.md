@@ -64,20 +64,21 @@ and it also provides unique opportunity to benchmark AOT optimizations with Heli
 
 Before we get to the results lets introduce the way of benchmarking we have chosen.
 To make the benchmark close to business like use-case, we will do the warmup/training 
-during docker build phase. That is actually a very cool way how to leverage AOT optimization,
+during docker build phase. That is actually a very practical way how to leverage AOT optimization,
 simply by creating a Docker image with AOT pre-trained Helidon application.
 
 
 # Benchmarking AOT with Helidon
 Benchmark is prepared as a set of docker files, each creating docker image with AOT pre-warmed Helidon application,
-application is a very simple Hello World example. Image is always created each time for both flavors of Helidon,
-super fast, super simple SE flavor and heavyweight full CDI powered MP. For having a baseline vanilla OpenJDK 
-version is measured too.
+application is a very simple Hello World example. Warming/training of the application is done by sending 
+large number of requests to the application endpoint via [wrk](https://github.com/wg/wrk) load test tool. 
+Image is created each time for both flavors of Helidon, super fast, super simple SE flavor and MP a heavier CDI runtime. 
+For having a baseline vanilla OpenJDK 23 version is measured too.
 
 Native Image is measured twice, normal AOT build without warmup/training 
 and build with [Profile-Guided Optimization(PGO)](https://www.graalvm.org/latest/reference-manual/native-image/guides/optimize-native-executable-with-pgo/).
 
-- Vanilla - Clean OpenJDK with no AOT warmup as a baseline
+- Vanilla - Clean OpenJDK 23 with no AOT warmup as a baseline
 - Leyden - Leyden project [EA build](https://jdk.java.net/leyden/) with warmup/training during build phase
 - Native Image - [GraalVM Native Image](https://www.graalvm.org/latest/reference-manual/native-image/) no warmup just AOT native image binary build in Docker build phase
 - Native Image [PGO](https://www.graalvm.org/latest/reference-manual/native-image/guides/optimize-native-executable-with-pgo/) - native image binary with profile guided optimization warmup/training in Docker build phase
@@ -108,7 +109,7 @@ Last test is another wrk load test, this time for 15 second to se if application
 
 
 ## Results
-Here are the results, and we can see its quite interesting.  
+Here are the results from March 7 benchmark execution round, and we can see it's quite interesting.
 
 ```markdown
 Name                     |   AOT/build sec| Warmup start ms| Warmup req/s|  Startup ms| 5ss run req/s| 15ss run req/s
