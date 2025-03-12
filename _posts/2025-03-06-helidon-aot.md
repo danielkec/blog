@@ -22,7 +22,7 @@ on change in the workload for example.
 But there are ways how we can speed up the startup and the warming up phase dramatically. Three most promising 
 technologies available are:
 - [Leyden project](https://openjdk.org/projects/leyden/)
-- [GraalVM Native Image](ttps://www.graalvm.org/latest/reference-manual/native-image/)
+- [GraalVM Native Image](https://www.graalvm.org/latest/reference-manual/native-image/)
 - [Coordinated Restore and Checkpoint (CRaC)](https://crac.org/)
 
 ## Leyden
@@ -87,7 +87,7 @@ and build with [Profile-Guided Optimization(PGO)](https://www.graalvm.org/latest
 - Native Image [PGO](https://www.graalvm.org/latest/reference-manual/native-image/guides/optimize-native-executable-with-pgo/) - native image binary with profile guided optimization warmup/training in Docker build phase
 - CRaC - [Coordinated Restore and Checkpoint (CRaC)](https://crac.org/) CRaC snapshot created during Docker build phase
 
-Lets break down what is measured and when, first we do a measurement in the build phase, measuring how long it takes to build 
+Let's break down what is measured and when, first we do a measurement in the build phase, measuring how long it takes to build 
 the application with the AOT, how fast it starts for warmup and how many requests per second it manages to handle during the warmup/training.
 Second, we measure the startup time of the optimized application, 
 then we do short 5 second load test with [wrk tool](https://github.com/wg/wrk) to figure out how actually pre-warmed is our
