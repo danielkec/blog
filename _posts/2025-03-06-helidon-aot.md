@@ -62,7 +62,7 @@ and that brings very exciting ability to do snapshotting in a docker build phase
 Helidon is a microservice framework, and it matters if you can start your pod fast, you can scale up more effectively
 and avoid burning more resources than necessary. We have supported [GraalVM Native Image](https://helidon.io/docs/v4/mp/guides/graalnative) for years now, but as there are 
 more players in the field, **[Helidon 4.2.0 adds support for CRaC](https://helidon.io/docs/v4/mp/guides/crac)**. 
-Leyden don't need a any special support at all so you can easily use any of the available 3 options, 
+Leyden doesn't need a any special support at all so you can easily use any of the available 3 options, 
 and it also provides unique opportunity to benchmark AOT optimizations with Helidon application!
 
 Before we get to the results lets introduce the way of benchmarking we have chosen.
@@ -75,7 +75,7 @@ simply by creating a Docker image with AOT pre-trained Helidon application.
 Benchmark is prepared as a set of docker files, each creating docker image with AOT pre-warmed Helidon application,
 application is a very simple Hello World example. Warming/training of the application is done by sending 
 large number of requests to the application endpoint via [wrk](https://github.com/wg/wrk) load test tool. 
-Image is created each time for both flavors of Helidon, super fast, super simple SE flavor and MP a heavier CDI runtime. 
+Image is created each time for both flavors of Helidon, super fast, super simple SE flavor and MP a CDI runtime. 
 For having a baseline vanilla OpenJDK 23 version is measured too.
 
 Native Image is measured twice, normal AOT build without warmup/training 
@@ -148,7 +148,7 @@ First short test is meant to test the performance before JIT optimization has a 
 optimize any further. 
 
 Once again Native Image with PGO is leading the race with Helidon SE application. Native Image with 
-CRaC following closely. This time, with larger Helidon MP application, is situation changing 
+CRaC following closely. This time, with Helidon MP application, is situation changing 
 on second place and CRaC is getting faster than Native Image without PGO.
 
 ![5sec-testimg.png](../assets/aot-bench/5sec-test.png)
@@ -156,7 +156,7 @@ on second place and CRaC is getting faster than Native Image without PGO.
 ### Long load test
 Second test gives some more time to the JIT to further optimize. Interesting is that Native Image with PGO 
 still leads, but normal Native Image gets behind Vanilla JDK and Leyden. Yes JDK without any extra AOT
-is catching on already! And with heavier Helidon MP application JDK takes down even the Native Image with PGO!
+is catching on already! And with Helidon MP application JDK takes down even the Native Image with PGO!
 
 ![15sec-testimg.png](../assets/aot-bench/15sec-test.png)
 
