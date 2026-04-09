@@ -37,7 +37,7 @@ There are currently three relevant pieces in Helidon 4.4.0:
 
  * `io.helidon.integrations.oci:helidon-integrations-oci`
  * ⚠️ `io.helidon.integrations.oci.sdk:helidon-integrations-oci-sdk-runtime`
- * `io.helidon.integrations.oci.sdk:helidon-integrations-oci-sdk-cdi`
+ * ⚠️ `io.helidon.integrations.oci.sdk:helidon-integrations-oci-sdk-cdi`
 
 The important one for new Helidon SE code is `helidon-integrations-oci`. It is the current Service
 Registry based integration and it is the module this article focuses on.
@@ -45,8 +45,9 @@ Registry based integration and it is the module this article focuses on.
 ⚠️ The older `helidon-integrations-oci-sdk-runtime` still exists, but it is deprecated since Helidon
 4.1.0 and replaced by `helidon-integrations-oci`.
 
-For Helidon MP, CDI support still lives in `helidon-integrations-oci-sdk-cdi`, so I will return to
-that module in the final section when looking at `@Inject BasicAuthenticationDetailsProvider`.
+⚠️ In practice, I would treat `helidon-integrations-oci-sdk-cdi` as deprecated as well. For this
+article I use `helidon-integrations-oci` as the current path and rely on the Helidon MP Service
+Registry to CDI bridge when looking at `@Inject BasicAuthenticationDetailsProvider`.
 
 ## Base module and configuration sources
 
@@ -349,10 +350,10 @@ environment, Helidon fails instead of silently falling back to something else.
 
 ⚠️ One more detail: if you read older OCI CDI examples or older internals in the Helidon source tree, the
 strategy names are not completely identical. The current Service Registry based integration uses names
-such as `instance-principal` and `session-token`, while the older CDI strategy layer still refers to
-things like `instance-principals`, `session-token-builder`, and `session-token-config-file`. That does
-not change how the new SE module works, but it is useful context when comparing examples across
-generations of the integration.
+such as `instance-principal` and `session-token`, while the older legacy CDI strategy layer still
+refers to things like `instance-principals`, `session-token-builder`, and
+`session-token-config-file`. That does not change how the new module works, but it is useful context
+when comparing examples across generations of the integration.
 
 ## Injecting BasicAuthenticationDetailsProvider
 
@@ -405,17 +406,9 @@ need an escape hatch.
 
 ### Helidon MP CDI injection
 
-For Helidon MP, use the CDI extension:
-
-```xml
-<dependency>
-    <groupId>io.helidon.integrations.oci.sdk</groupId>
-    <artifactId>helidon-integrations-oci-sdk-cdi</artifactId>
-    <version>${helidon.version}</version>
-</dependency>
-```
-
-Then the provider can be injected as a CDI bean:
+For Helidon MP, the recommended path is also `helidon-integrations-oci`. Helidon MP includes a
+general Service Registry to CDI bridge, so the resolved `BasicAuthenticationDetailsProvider` can be
+injected as a CDI bean without adding the older OCI-specific CDI module:
 
 ```java
 import com.oracle.bmc.auth.BasicAuthenticationDetailsProvider;
@@ -429,8 +422,10 @@ public class BucketService {
 }
 ```
 
-That is the MP story in Helidon 4.4.0: the new Service Registry based module is the main path for SE,
-while MP still uses the CDI integration module for direct `@Inject` support.
+⚠️ Treat `helidon-integrations-oci-sdk-cdi` as the legacy OCI SDK CDI path. It may still matter if
+you rely on its broader OCI SDK client and builder injection support, but for
+`BasicAuthenticationDetailsProvider` itself the current article uses `helidon-integrations-oci` and
+the MP CDI bridge.
 
 ## Conclusion
 
@@ -438,6 +433,7 @@ Helidon 4.4.0 gives OCI authentication a clean, modular shape:
 
  * `config`, `config-file`, and `session-token` are available directly from `helidon-integrations-oci`
  * `instance-principal`, `resource-principal`, and `oke-workload-identity` are opt-in add-ons
+ * ⚠️ `helidon-integrations-oci-sdk-runtime` and `helidon-integrations-oci-sdk-cdi` should be treated as legacy paths
  * once resolved, the provider is available as `BasicAuthenticationDetailsProvider`
 
 For local development, `config-file` is usually the easiest start. For application-owned secrets,
