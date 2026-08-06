@@ -4,7 +4,7 @@ title:  "OCI-Managed Certificate Bundles in Helidon"
 date:   2026-08-05 08:00:00 +0200
 categories: [helidon, oci, tls, security]
 description: Use OCI-managed certificate bundles for automatically renewed and dynamically reloaded TLS in Helidon applications.
-published: true
+published: true # The author will announce the public link separately.
 ---
 
 # OCI-Managed Certificate Bundles in Helidon
